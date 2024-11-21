@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
 import Web3 from "web3";
-import Admin from "./abis/Admin.json";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Admin from "./abis/Admin.json"; // Adjust this path if necessary
 import MetaMaskGuide from "./MetaMaskGuide";
-import { Container } from "semantic-ui-react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import AdminPageCreate from "./pages/Admin/CreateUser";
 import AllEmployees from "./pages/Admin/AllEmployees";
@@ -25,31 +24,53 @@ import NotificationsOrg from "./pages/OrganizationEndorser/Notifications";
 import LoadComp from "./components/LoadComp";
 
 function App() {
-  const [isMeta, setisMeta] = useState(false);
-  const [isEmployee, setisEmployee] = useState(false);
-  const [account, setaccount] = useState("");
-  const [isOrganizationEndorser, setisOrganizationEndorser] = useState(false);
-  const [isOwner, setisOwner] = useState(false);
-  const [loadcomp, setloadcomp] = useState(false);
+  const [isMeta, setIsMeta] = useState(false);
+  const [isEmployee, setIsEmployee] = useState(false);
+  const [account, setAccount] = useState("");
+  const [isOrganizationEndorser, setIsOrganizationEndorser] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [loadComp, setLoadComp] = useState(false);
 
-  const loadBlockChainData = async () => {
+  const loadBlockchainData = async () => {
     const web3 = window.web3;
     const accounts = await web3.eth.getAccounts();
-    if (accounts) {
-      setaccount(accounts[0]);
+    console.log("Accounts:", accounts);
+    if (accounts.length > 0) {
+      setAccount(accounts[0]);
+    } else {
+      toast.error("No accounts found!");
+      return;
     }
+
     const networkId = await web3.eth.net.getId();
-    const AdminData = await Admin.networks[networkId];
+    console.log("Network ID:", networkId);
+    const AdminData = Admin.networks[networkId];
+    console.log("Admin Contract Data:", AdminData);
     if (AdminData) {
-      const admin = await new web3.eth.Contract(Admin.abi, AdminData.address);
-      const isEmployee = await admin?.methods?.isEmployee(accounts[0]).call();
-      const isOrganizationEndorser = await admin?.methods
-        ?.isOrganizationEndorser(accounts[0])
-        .call();
-      const owner = await admin?.methods?.owner().call();
-      setisEmployee(isEmployee);
-      setisOrganizationEndorser(isOrganizationEndorser);
-      setisOwner(owner === accounts[0]);
+      const admin = new web3.eth.Contract(Admin.abi, AdminData.address);
+      console.log("Admin Contract Instance:", admin);
+
+      try {
+        console.log("Calling isEmployee...");
+        const isEmployee = await admin.methods.isEmployee(accounts[0]).call();
+        console.log("isEmployee:", isEmployee);
+
+        console.log("Calling isOrganizationEndorser...");
+        const isOrganizationEndorser = await admin.methods.isOrganizationEndorser(accounts[0]).call();
+        console.log("isOrganizationEndorser:", isOrganizationEndorser);
+
+        console.log("Calling owner...");
+        const owner = await admin.methods.owner().call();
+        console.log("owner:", owner);
+
+        setIsEmployee(isEmployee);
+        setIsOrganizationEndorser(isOrganizationEndorser);
+        setIsOwner(owner === accounts[0]);
+      } catch (error) {
+        console.error("Error calling contract methods:", error);
+        toast.error("Error calling contract methods. See console for details.");
+      }
+
     } else {
       toast.error("The Admin Contract does not exist on this network!");
     }
@@ -57,99 +78,76 @@ function App() {
 
   useEffect(() => {
     const func = async () => {
-      setisMeta(true);
-      setloadcomp(true);
+      setIsMeta(true);
+      setLoadComp(true);
       if (window.ethereum) {
-        await window.ethereum.request({
-          method: "eth_requestAccounts",
-        });
-        window.web3 = await new Web3(window.ethereum);
-        await loadBlockChainData();
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        window.web3 = new Web3(window.ethereum);
+        await loadBlockchainData();
       } else if (window.web3) {
-        window.web3 = await new Web3(window.web3.currentProvider);
-        await loadBlockChainData();
+        window.web3 = new Web3(window.web3.currentProvider);
+        await loadBlockchainData();
       } else {
-        setisMeta(false);
+        setIsMeta(false);
       }
-      setloadcomp(false);
+      setLoadComp(false);
     };
     func();
-    return () => {
-      //
-    };
   }, []);
 
-  const adminRoutes = () => {
-    return (
-      <Switch>
-        <Route path="/" exact component={AllEmployees} />
-        <Route
-          path="/all-organization-endorser"
-          exact
-          component={AllOrganizationEndorser}
-        />
-        <Route path="/create-user" exact component={AdminPageCreate} />
-        <Route path="/notifications" exact component={NotificationsAdmin} />
-      </Switch>
-    );
-  };
+  const adminRoutes = () => (
+    <Switch>
+      <Route path="/" exact component={AllEmployees} />
+      <Route path="/all-organization-endorser" exact component={AllOrganizationEndorser} />
+      <Route path="/create-user" exact component={AdminPageCreate} />
+      <Route path="/notifications" exact component={NotificationsAdmin} />
+    </Switch>
+  );
 
-  const employeeRoutes = () => {
-    return (
-      <Switch>
-        <Route path="/" exact component={EmployeePage} />
-        <Route path="/update-profile" exact component={UpdateProfile} />
-        <Route path="/notifications" exact component={NotificationsEmployee} />
-      </Switch>
-    );
-  };
+  const employeeRoutes = () => (
+    <Switch>
+      <Route path="/" exact component={EmployeePage} />
+      <Route path="/update-profile" exact component={UpdateProfile} />
+      <Route path="/notifications" exact component={NotificationsEmployee} />
+    </Switch>
+  );
 
-  const isOrganizationEndorserRoutes = () => {
-    return (
-      <Switch>
-        <Route path="/" exact component={Organization} />
-        <Route path="/endorse-skill" exact component={EndorseSkill} />
-        <Route path="/endorse-section" exact component={Endorse} />
-        <Route path="/notifications" exact component={NotificationsOrg} />
-      </Switch>
-    );
-  };
+  const organizationEndorserRoutes = () => (
+    <Switch>
+      <Route path="/" exact component={Organization} />
+      <Route path="/endorse-skill" exact component={EndorseSkill} />
+      <Route path="/endorse-section" exact component={Endorse} />
+      <Route path="/notifications" exact component={NotificationsOrg} />
+    </Switch>
+  );
 
-  const noRoleRoutes = () => {
-    return (
-      <Switch>
-        <Route path="/" exact component={NoRole} />
-        <Route path="/notifications" exact component={Notifications} />
-      </Switch>
-    );
-  };
+  const noRoleRoutes = () => (
+    <Switch>
+      <Route path="/" exact component={NoRole} />
+      <Route path="/notifications" exact component={Notifications} />
+    </Switch>
+  );
 
   const renderRoutes = () => {
     if (isOwner) return adminRoutes();
     else if (isEmployee) return employeeRoutes();
-    else if (isOrganizationEndorser) return isOrganizationEndorserRoutes();
+    else if (isOrganizationEndorser) return organizationEndorserRoutes();
     else return noRoleRoutes();
   };
 
   return (
     <div>
-      {loadcomp ? (
+      {loadComp ? (
         <LoadComp />
       ) : isMeta && account !== "" ? (
         <BrowserRouter>
           <Navbar />
-          <Container>
-            <ToastContainer />
-            <Switch>
-              <Route
-                path="/getemployee/:employee_address"
-                exact
-                component={GetEmployee}
-              />
-              <Route path="/getOrg/:orgAddress" exact component={GetOrg} />
-              {renderRoutes()}
-            </Switch>
-          </Container>
+          <ToastContainer />
+          <Switch>
+            <Route path="/getemployee/:employee_address" exact component={GetEmployee} />
+            <Route path="/getOrg/:orgAddress" exact component={GetOrg} />
+            {renderRoutes()}
+          </Switch>
         </BrowserRouter>
       ) : (
         <MetaMaskGuide />

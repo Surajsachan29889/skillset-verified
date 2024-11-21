@@ -1,3 +1,6 @@
+# Digital envelop
+# $env:NODE_OPTIONS = "--openssl-legacy-provider"
+
 # Skillset Verified
 
 A blockchain-based skill verification system can help reduce the time spent on conducting competency checks, skill verification and build more trust in the skill and competency management within the organisation. With Blockchain, an employee can have his/her skills recorded on an available network which are also verified and approved by their previous managers/employers. Thus with a skill chain based on the blockchain for an employee, we can be completely assured of the skills, experience, learning goal progress and their competency level along with a transparency of who have endorsed the employees on these skills. Further, this will help organisation to help optimally leverage credible employees for respective business needs.

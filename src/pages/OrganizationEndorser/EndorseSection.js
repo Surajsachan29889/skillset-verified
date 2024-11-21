@@ -53,7 +53,7 @@ export default class Endorse extends Component {
         Employee.abi,
         employeeContractAddress
       );
-      // console.log(employeeContractAddress, EmployeeContract);
+      console.log(employeeContractAddress, EmployeeContract);
       try {
         if (section === 1) {
           await EmployeeContract?.methods
